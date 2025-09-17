@@ -17,48 +17,6 @@ No API, no pain. Just download and chill.
 
 ---
 
-## Installation
-Clone this repository:
-```bash
-git clone https://github.com/yourusername/google-classroom-document-download-tool.git
-cd google-classroom-document-download-tool
-Install the dependencies:
-
-bash
-Sao chép mã
-pip install -r requirements.txt
-requirements.txt should contain:
-
-nginx
-Sao chép mã
-selenium
-requests
-beautifulsoup4
-You also need Google Chrome and ChromeDriver installed.
-
-Usage
-Open the script file assignment_download.py.
-
-Replace the placeholders with your Google Classroom credentials and course URL:
-
-python
-Sao chép mã
-EMAIL = "your_email"
-PASSWORD = "your_password"
-COURSE_URL = "your_classroom_course_url"
-Run the script:
-
-bash
-Sao chép mã
-python assignment_download.py
-Files will be downloaded into the downloads/ folder.
-
-Notes
-This tool uses Selenium to log in, so you will see a browser window pop up.
-
 Make sure you have access to the Classroom course before running.
 
 This project is for educational purposes only. Please respect Google’s terms of service.
-
-css
-Sao chép mã
