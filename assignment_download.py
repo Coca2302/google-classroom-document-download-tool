@@ -7,10 +7,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 
-
-EMAIL = "your_email"
+EMAIL = "your_mail"
 PASSWORD = "your_password"
-COURSE_URL = "your_classroom_course_url" 
+COURSE_URL = "assignment_url"
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -34,7 +33,7 @@ time.sleep(5)
 driver.get(COURSE_URL)
 time.sleep(5)
 
-
+# Lấy cookie từ Selenium để dùng với requests
 cookies = {c['name']: c['value'] for c in driver.get_cookies()}
 session = requests.Session()
 for name, value in cookies.items():
@@ -55,28 +54,31 @@ def sanitize_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "_", name)
 
 def download_from_drive(session, file_id, dest_path):
-    """Download file from Google Drive (handling confirm token)."""
+    """Download file từ Google Drive (xử lý confirm token + cảnh báo quét virus)."""
     URL = "https://drive.google.com/uc?export=download"
 
     response = session.get(URL, params={"id": file_id}, stream=True)
-    token = None
 
-    for k, v in response.cookies.items():
-        if k.startswith("download_warning"):
-            token = v
+    # Nếu bị trả về trang cảnh báo virus => parse link tải thật
+    if "text/html" in response.headers.get("content-type", ""):
+        soup = BeautifulSoup(response.text, "html.parser")
+        form = soup.find("form", {"id": "download-form"})
+        if form:
+            action = form["action"]
+            inputs = {inp["name"]: inp["value"] for inp in form.find_all("input", {"type": "hidden"})}
+            response = session.get(action, params=inputs, stream=True)
 
-    if token:
-        response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
-
+    # Lấy tên file từ header
     disposition = response.headers.get("content-disposition", "")
     if "filename=" in disposition:
-        filename = disposition.split("filename=")[-1].strip('"')
+        filename = disposition.split("filename=")[-1].strip('"').strip("'")
     else:
-        filename = f"{file_id}"
+        filename = f"{file_id}.bin"
 
     filename = sanitize_filename(filename)
     filepath = os.path.join(dest_path, filename)
 
+    # Ghi file nhị phân
     with open(filepath, "wb") as f:
         for chunk in response.iter_content(32768):
             if chunk:
@@ -85,6 +87,7 @@ def download_from_drive(session, file_id, dest_path):
     print(f"    -> Downloaded: {filename}")
     return filepath
 
+# Tải tất cả file
 for i, link in enumerate(links, 1):
     match = re.search(r'/d/([a-zA-Z0-9_-]+)', link) or re.search(r'id=([a-zA-Z0-9_-]+)', link)
     if not match:
